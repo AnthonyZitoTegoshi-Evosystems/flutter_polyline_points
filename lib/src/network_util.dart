@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:flutter_polyline_points/src/utils/polyline_decoder.dart';
 import 'package:flutter_polyline_points/src/utils/polyline_request.dart';
 import 'package:http/http.dart' as http;
@@ -26,13 +27,14 @@ class NetworkUtil {
       if (parsedJson["status"]?.toLowerCase() == STATUS_OK && parsedJson["routes"] != null && parsedJson["routes"].isNotEmpty) {
         List<dynamic> routeList = parsedJson["routes"];
         for (var route in routeList) {
-          var polyline = '';
-          final legs = route['legs'];
-          for (var leg in legs) {
-            polyline += leg['steps'].map((e) => e['polyline']['points']).toList().join('');
+          final points = <PointLatLng>[];
+          for (var leg in route['legs']) {
+            for (var step in leg['steps']) {
+              points.addAll(PolylineDecoder.run(step['polyline']['points']));
+            }
           }
           results.add(PolylineResult(
-            points: PolylineDecoder.run(polyline),
+            points: points,
             errorMessage: "",
             status: parsedJson["status"],
             totalDistanceValue: route['legs'].map((leg) => leg['distance']['value']).reduce((v1, v2) => v1 + v2),
